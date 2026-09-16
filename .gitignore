@@ -31,3 +31,4 @@ xcuserdata/
 
 # macOS
 .DS_Store
+mac/Shared/BuildConfig.swift

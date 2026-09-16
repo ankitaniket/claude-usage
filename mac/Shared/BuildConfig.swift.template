@@ -1,0 +1,14 @@
+import Foundation
+
+// COPY this file to `BuildConfig.swift` (same folder) and fill in the values.
+// BuildConfig.swift is gitignored so your token never lands in the repo.
+//
+// The menu bar app can also be configured at runtime via its Settings UI;
+// these compile-time values are mainly so the WidgetKit extension has a URL
+// and token (it can't read the app's UserDefaults).
+enum BuildConfig {
+    // e.g. "https://claude-usage-wiyse.vercel.app"
+    static let dashboardURL = ""
+    // Must match the dashboard's SUMMARY_TOKEN env var.
+    static let summaryToken = ""
+}
