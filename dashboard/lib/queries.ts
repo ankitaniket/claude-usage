@@ -3,18 +3,27 @@ import { db } from "./db";
 // Billable token expression used everywhere (excludes cheap cache reads).
 const TOKENS = "input_tokens + output_tokens + cache_creation";
 
+/** One limit window (5-hour session, weekly, or weekly-Opus). */
+export interface WindowStat {
+  usedPct: number | null;
+  remainingPct: number | null;
+  resetsAt: string | null;
+}
+
 export interface Summary {
   generatedAt: string;
+  session: WindowStat; // 5-hour window — the one that blocks you (PRIORITY)
+  week: WindowStat; // weekly, all models
+  opus: WindowStat; // weekly, Opus only (may be all-null if not reported)
   weekTokens: number;
   todayTokens: number;
   weekCostUsd: number;
   dominantModel: string | null;
   activeHoursToday: number;
-  weekUsedPct: number | null;
-  weekRemainingPct: number | null;
-  resetsAt: string | null;
   source: "endpoint" | "estimated";
 }
+
+const EMPTY: WindowStat = { usedPct: null, remainingPct: null, resetsAt: null };
 
 export async function getPlanConfig(): Promise<Record<string, unknown>> {
   const sql = db();
@@ -66,54 +75,67 @@ export async function computeSummary(): Promise<Summary> {
     WHERE bucket_ts >= date_trunc('day', now())
   `) as { active_hours: number; tokens: string }[];
 
-  // Only trust a *recent* live reading; otherwise we estimate below.
-  const snap = (await sql`
-    SELECT used_pct, remaining_pct, resets_at, source
-    FROM limit_snapshots
-    WHERE win = 'weekly' AND source = 'endpoint'
-      AND captured_at >= now() - interval '6 hours'
-    ORDER BY captured_at DESC
-    LIMIT 1
-  `) as {
-    used_pct: string | null;
-    remaining_pct: string | null;
-    resets_at: string | null;
-    source: string;
-  }[];
+  // Latest *recent* live reading per window (collector-fed from Claude's endpoint).
+  const latest = async (win: string): Promise<WindowStat | null> => {
+    const rows = (await sql`
+      SELECT used_pct, remaining_pct, resets_at
+      FROM limit_snapshots
+      WHERE win = ${win} AND source = 'endpoint'
+        AND captured_at >= now() - interval '6 hours'
+      ORDER BY captured_at DESC
+      LIMIT 1
+    `) as {
+      used_pct: string | null;
+      remaining_pct: string | null;
+      resets_at: string | null;
+    }[];
+    if (!rows.length || rows[0].used_pct == null) return null;
+    const used = num(rows[0].used_pct);
+    return {
+      usedPct: used,
+      remainingPct: rows[0].remaining_pct != null ? num(rows[0].remaining_pct) : 100 - used,
+      resetsAt: rows[0].resets_at,
+    };
+  };
 
-  let weekUsedPct: number | null = null;
-  let weekRemainingPct: number | null = null;
-  let resetsAt: string | null = null;
-  let source: "endpoint" | "estimated" = "estimated";
-
-  if (snap.length && snap[0].used_pct != null) {
-    weekUsedPct = num(snap[0].used_pct);
-    weekRemainingPct =
-      snap[0].remaining_pct != null
-        ? num(snap[0].remaining_pct)
-        : 100 - weekUsedPct;
-    resetsAt = snap[0].resets_at;
-    source = snap[0].source === "endpoint" ? "endpoint" : "estimated";
-  } else {
-    // No live reading → estimate against the configured weekly token limit.
+  // Estimate a window from token volume vs a configured limit (fallback only).
+  const estimate = async (
+    limitKey: string,
+    interval: "5 hours" | "7 days",
+  ): Promise<WindowStat> => {
     const cfg = await getPlanConfig();
-    const limit = num(cfg.weekly_token_limit, 0);
-    if (limit > 0) {
-      weekUsedPct = Math.min(100, Math.round((weekTokens / limit) * 1000) / 10);
-      weekRemainingPct = Math.max(0, 100 - weekUsedPct);
-    }
-  }
+    const limit = num(cfg[limitKey], 0);
+    if (limit <= 0) return EMPTY;
+    const [row] = (await sql`
+      SELECT COALESCE(SUM(${sql.unsafe(TOKENS)}), 0)::bigint AS tokens
+      FROM usage_hourly
+      WHERE bucket_ts >= now() - (${interval})::interval
+    `) as { tokens: string }[];
+    const used = Math.min(100, Math.round((num(row?.tokens) / limit) * 1000) / 10);
+    return { usedPct: used, remainingPct: Math.max(0, 100 - used), resetsAt: null };
+  };
+
+  const liveSession = await latest("5h");
+  const liveWeek = await latest("weekly");
+  const liveOpus = await latest("opus_weekly");
+
+  const session = liveSession ?? (await estimate("five_hour_token_limit", "5 hours"));
+  const week = liveWeek ?? (await estimate("weekly_token_limit", "7 days"));
+  const opus = liveOpus ?? EMPTY;
+
+  const source: "endpoint" | "estimated" =
+    liveSession || liveWeek ? "endpoint" : "estimated";
 
   return {
     generatedAt: new Date().toISOString(),
+    session,
+    week,
+    opus,
     weekTokens,
     todayTokens: num(today?.tokens),
     weekCostUsd: Math.round(weekCostUsd * 100) / 100,
     dominantModel,
     activeHoursToday: today?.active_hours ?? 0,
-    weekUsedPct,
-    weekRemainingPct,
-    resetsAt,
     source,
   };
 }

@@ -49,16 +49,22 @@ export interface LimitSnapshot {
   source: "endpoint" | "estimated";
 }
 
+export interface WindowStat {
+  usedPct: number | null;
+  remainingPct: number | null;
+  resetsAt: string | null;
+}
+
 /** Compact payload the widgets consume (also written locally as fallback). */
 export interface Summary {
   generatedAt: string;
+  session: WindowStat; // 5-hour window (PRIORITY)
+  week: WindowStat; // weekly, all models
+  opus: WindowStat; // weekly, Opus only
   weekTokens: number;
   todayTokens: number;
   weekCostUsd: number;
   dominantModel: string | null;
   activeHoursToday: number;
-  weekUsedPct: number | null;
-  weekRemainingPct: number | null;
-  resetsAt: string | null;
   source: "endpoint" | "estimated";
 }

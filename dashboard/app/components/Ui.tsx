@@ -51,6 +51,40 @@ export function UsageRing({
   );
 }
 
+/** Secondary limit as a labeled progress bar (weekly, opus). */
+export function LimitBar({
+  label,
+  pct,
+  resets,
+}: {
+  label: string;
+  pct: number | null;
+  resets: string | null;
+}) {
+  const color = usageColor(pct);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex items-baseline justify-between">
+        <span className="text-xs uppercase tracking-wider text-neutral-500">
+          {label}
+        </span>
+        <span className="text-sm font-semibold tabular-nums" style={{ color }}>
+          {pct == null ? "—" : `${Math.round(pct)}%`}
+        </span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/5">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct == null ? 0 : Math.min(100, pct)}%`, background: color }}
+        />
+      </div>
+      <div className="mt-1.5 text-xs text-neutral-500">
+        {resets ? `resets in ${resets}` : " "}
+      </div>
+    </div>
+  );
+}
+
 export function StatCard({
   label,
   value,

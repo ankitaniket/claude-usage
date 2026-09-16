@@ -8,6 +8,56 @@ export interface Insight {
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+function resetsInText(iso: string | null): string {
+  if (!iso) return "soon";
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "any moment";
+  const h = Math.floor(ms / 3.6e6);
+  const m = Math.floor((ms % 3.6e6) / 6e4);
+  return h >= 1 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/**
+ * The 5-hour session window — the one that actually blocks you when it hits
+ * 100%. This is the priority signal.
+ */
+export function sessionInsight(
+  usedPct: number | null,
+  resetsAt: string | null,
+): Insight {
+  if (usedPct == null) {
+    return {
+      tone: "ok",
+      title: "Session usage unknown",
+      detail: "No live reading yet — the collector fetches it every run.",
+    };
+  }
+  const resets = resetsInText(resetsAt);
+  if (usedPct >= 95)
+    return {
+      tone: "crit",
+      title: "Session almost maxed",
+      detail: `${usedPct}% of your 5-hour window used. You'll be blocked soon — it resets in ${resets}.`,
+    };
+  if (usedPct >= 80)
+    return {
+      tone: "high",
+      title: "Session running low",
+      detail: `${usedPct}% of the 5-hour window used, resets in ${resets}. Wrap up heavy work or switch to a lighter model.`,
+    };
+  if (usedPct >= 50)
+    return {
+      tone: "ok",
+      title: "Session going strong",
+      detail: `${usedPct}% of the 5-hour window used, resets in ${resets}. Plenty left.`,
+    };
+  return {
+    tone: "low",
+    title: "Fresh session",
+    detail: `Only ${usedPct}% of the 5-hour window used${resetsAt ? `, resets in ${resets}` : ""}. Go heavy on Opus.`,
+  };
+}
+
 /**
  * The "am I wasting or burning credits?" signal.
  * When a reset time is known we pace usage against elapsed time; otherwise we

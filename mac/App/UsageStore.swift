@@ -25,12 +25,12 @@ final class UsageStore: ObservableObject {
         loading = false
     }
 
-    /// Menu bar title, e.g. "68%" or "—".
+    /// Menu bar title = 5-hour session %, the limit that actually blocks you.
     var menuBarText: String {
-        if let p = summary?.weekUsedPct { return "\(Int(p))%" }
-        if let t = summary?.todayTokens { return Fmt.tokens(t) }
+        if let p = summary?.session.usedPct { return "\(Int(p))%" }
+        if let p = summary?.week.usedPct { return "\(Int(p))%" }
         return "—"
     }
 
-    var tint: Color { Fmt.color(forPct: summary?.weekUsedPct) }
+    var tint: Color { Fmt.color(forPct: summary?.session.usedPct) }
 }

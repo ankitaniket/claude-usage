@@ -6,10 +6,10 @@ import {
   getHourHeatmap,
   type Summary,
 } from "@/lib/queries";
-import { weeklyInsight } from "@/lib/insights";
+import { sessionInsight } from "@/lib/insights";
 import { fmtTokens, fmtUsd, shortModel, resetsIn } from "@/lib/format";
 import { TrendChart, ProjectBars } from "./components/Charts";
-import { UsageRing, StatCard, ModelSplit, Heatmap } from "./components/Ui";
+import { UsageRing, StatCard, ModelSplit, Heatmap, LimitBar } from "./components/Ui";
 
 export const dynamic = "force-dynamic";
 
@@ -81,14 +81,15 @@ export default async function Page() {
   }
 
   const { summary, trend, models, projects, heat } = data;
-  const insight = weeklyInsight(summary.weekUsedPct, summary.resetsAt);
+  const insight = sessionInsight(summary.session.usedPct, summary.session.resetsAt);
   const toneRing: Record<string, string> = {
     low: "border-sky-500/30 bg-sky-500/5 text-sky-200",
     ok: "border-emerald-500/30 bg-emerald-500/5 text-emerald-200",
     high: "border-amber-500/30 bg-amber-500/5 text-amber-200",
     crit: "border-red-500/30 bg-red-500/5 text-red-200",
   };
-  const resets = resetsIn(summary.resetsAt);
+  const sessionResets = resetsIn(summary.session.resetsAt);
+  const weekResets = resetsIn(summary.week.resetsAt);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -98,7 +99,7 @@ export default async function Page() {
             Claude Usage
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            How much of your Claude you actually use ·{" "}
+            Your live Claude limits — no need to open the usage page ·{" "}
             <span
               className={
                 summary.source === "endpoint"
@@ -115,13 +116,16 @@ export default async function Page() {
         </span>
       </header>
 
-      {/* Top: ring + insight + stats */}
+      {/* HERO: 5-hour session window (the one that blocks you) */}
       <section className="mt-8 grid gap-5 lg:grid-cols-[auto_1fr]">
-        <div className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+          <span className="mb-2 text-xs font-medium uppercase tracking-wider text-neutral-400">
+            Current session · 5h
+          </span>
           <UsageRing
-            pct={summary.weekUsedPct}
-            label="week used"
-            sub={resets ? `resets in ${resets}` : undefined}
+            pct={summary.session.usedPct}
+            label="used"
+            sub={sessionResets ? `resets in ${sessionResets}` : "reset time n/a"}
           />
         </div>
 
@@ -129,6 +133,19 @@ export default async function Page() {
           <div className={`rounded-2xl border p-5 ${toneRing[insight.tone]}`}>
             <div className="text-sm font-semibold">{insight.title}</div>
             <div className="mt-1 text-sm opacity-80">{insight.detail}</div>
+          </div>
+          {/* Secondary limits: weekly + opus */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <LimitBar
+              label="Weekly · all models"
+              pct={summary.week.usedPct}
+              resets={weekResets}
+            />
+            <LimitBar
+              label="Weekly · Opus"
+              pct={summary.opus.usedPct}
+              resets={resetsIn(summary.opus.resetsAt)}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-4">
             <StatCard

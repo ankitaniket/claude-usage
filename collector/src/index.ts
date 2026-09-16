@@ -33,15 +33,13 @@ async function main(): Promise<void> {
     limits = await fetchLiveLimits();
     console.log(`[collector] ${limits.length} live limit snapshots.`);
   }
-  const weekly = limits.find((l) => l.window === "weekly") ?? null;
-
   // 4. Build + persist the local summary (widget fallback).
-  const summary = buildSummary(store, weekly);
+  const summary = buildSummary(store, limits);
   writeSummary(summary);
   console.log(
-    `[collector] week=${summary.weekTokens} tok, today=${summary.todayTokens} tok, ` +
-      `cost≈$${summary.weekCostUsd}, model=${summary.dominantModel ?? "n/a"}` +
-      (summary.weekUsedPct != null ? `, used=${summary.weekUsedPct}%` : ""),
+    `[collector] session(5h)=${summary.session.usedPct ?? "?"}%, ` +
+      `week=${summary.week.usedPct ?? "?"}%, today=${summary.todayTokens} tok, ` +
+      `model=${summary.dominantModel ?? "n/a"}`,
   );
 
   // 5. Push all buckets (absolute totals, idempotent upsert) + limits.

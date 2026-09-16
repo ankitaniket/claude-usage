@@ -1,6 +1,12 @@
 import fs from "node:fs";
 import { paths } from "./config.js";
-import type { AggregateStore, Bucket, LimitSnapshot, Summary } from "./types.js";
+import type {
+  AggregateStore,
+  Bucket,
+  LimitSnapshot,
+  Summary,
+  WindowStat,
+} from "./types.js";
 
 /**
  * "Billable" token count: input + output + newly-created cache context.
@@ -27,9 +33,15 @@ function isToday(bucketTs: string): boolean {
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+const EMPTY: WindowStat = { usedPct: null, remainingPct: null, resetsAt: null };
+
+function toStat(l: LimitSnapshot | undefined): WindowStat {
+  return l ? { usedPct: l.usedPct, remainingPct: l.remainingPct, resetsAt: l.resetsAt } : EMPTY;
+}
+
 export function buildSummary(
   store: AggregateStore,
-  weekly?: LimitSnapshot | null,
+  limits: LimitSnapshot[] = [],
 ): Summary {
   let weekTokens = 0;
   let todayTokens = 0;
@@ -59,17 +71,22 @@ export function buildSummary(
     }
   }
 
+  const session = toStat(limits.find((l) => l.window === "5h"));
+  const week = toStat(limits.find((l) => l.window === "weekly"));
+  const opus = toStat(limits.find((l) => l.window === "opus_weekly"));
+  const hasLive = limits.some((l) => l.source === "endpoint");
+
   return {
     generatedAt: new Date().toISOString(),
+    session,
+    week,
+    opus,
     weekTokens,
     todayTokens,
     weekCostUsd: Math.round(weekCostUsd * 100) / 100,
     dominantModel,
     activeHoursToday: activeHours.size,
-    weekUsedPct: weekly ? weekly.usedPct : null,
-    weekRemainingPct: weekly ? weekly.remainingPct : null,
-    resetsAt: weekly ? weekly.resetsAt : null,
-    source: weekly ? weekly.source : "estimated",
+    source: hasLive ? "endpoint" : "estimated",
   };
 }
 
