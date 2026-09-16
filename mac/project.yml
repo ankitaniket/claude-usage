@@ -1,0 +1,45 @@
+name: ClaudeUsage
+options:
+  bundleIdPrefix: in.wiyse.claudeusage
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    GENERATE_INFOPLIST_FILE: NO
+    # Local build: select your Apple ID team in Xcode to run. Headless
+    # verification builds pass CODE_SIGNING_ALLOWED=NO on the command line.
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  ClaudeUsage:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: in.wiyse.claudeusage
+        INFOPLIST_FILE: App/Info.plist
+        ENABLE_HARDENED_RUNTIME: YES
+        # No App Sandbox so the menu bar app can read ~/.claude-usage/summary.json.
+        ENABLE_APP_SANDBOX: NO
+    dependencies:
+      - target: ClaudeUsageWidget
+
+  ClaudeUsageWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Widget
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: in.wiyse.claudeusage.ClaudeUsageWidget
+        INFOPLIST_FILE: Widget/Info.plist
+        ENABLE_HARDENED_RUNTIME: YES
