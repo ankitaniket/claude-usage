@@ -70,7 +70,7 @@ export async function computeSummary(): Promise<Summary> {
   const snap = (await sql`
     SELECT used_pct, remaining_pct, resets_at, source
     FROM limit_snapshots
-    WHERE window = 'weekly' AND source = 'endpoint'
+    WHERE win = 'weekly' AND source = 'endpoint'
       AND captured_at >= now() - interval '6 hours'
     ORDER BY captured_at DESC
     LIMIT 1

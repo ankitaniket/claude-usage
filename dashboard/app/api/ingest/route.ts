@@ -31,6 +31,7 @@ export async function POST(req: Request): Promise<Response> {
   const buckets = Array.isArray(body.buckets) ? body.buckets : [];
   const limits = Array.isArray(body.limits) ? body.limits : [];
 
+  try {
   // Batched, set-based idempotent upsert of absolute per-bucket totals.
   if (buckets.length) {
     await sql`
@@ -57,7 +58,7 @@ export async function POST(req: Request): Promise<Response> {
   // Record any live limit snapshots the collector captured.
   for (const l of limits) {
     await sql`
-      INSERT INTO limit_snapshots (window, used_pct, remaining_pct, resets_at, source)
+      INSERT INTO limit_snapshots (win, used_pct, remaining_pct, resets_at, source)
       VALUES (${l.window}, ${l.used_pct}, ${l.remaining_pct}, ${l.resets_at}, ${l.source})
     `;
   }
@@ -78,4 +79,11 @@ export async function POST(req: Request): Promise<Response> {
   `;
 
   return Response.json({ ok: true, buckets: buckets.length, limits: limits.length });
+  } catch (err) {
+    console.error("[ingest] error:", err);
+    return Response.json(
+      { error: "ingest failed", detail: (err as Error).message },
+      { status: 500 },
+    );
+  }
 }

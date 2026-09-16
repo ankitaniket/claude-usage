@@ -37,7 +37,7 @@ export async function GET(req: Request): Promise<Response> {
       ? Math.min(100, Math.round((num(fiveHour.tokens) / fiveHourLimit) * 1000) / 10)
       : null;
   await sql`
-    INSERT INTO limit_snapshots (window, used_pct, remaining_pct, resets_at, source)
+    INSERT INTO limit_snapshots (win, used_pct, remaining_pct, resets_at, source)
     VALUES ('5h', ${fiveUsedPct}, ${fiveUsedPct == null ? null : 100 - fiveUsedPct},
             now() + interval '5 hours', 'estimated')
   `;
@@ -54,7 +54,7 @@ export async function GET(req: Request): Promise<Response> {
       ? Math.min(100, Math.round((num(week.tokens) / weekLimit) * 1000) / 10)
       : null;
   await sql`
-    INSERT INTO limit_snapshots (window, used_pct, remaining_pct, resets_at, source)
+    INSERT INTO limit_snapshots (win, used_pct, remaining_pct, resets_at, source)
     VALUES ('weekly', ${weekUsedPct}, ${weekUsedPct == null ? null : 100 - weekUsedPct},
             NULL, 'estimated')
   `;

@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS usage_hourly_ts_idx ON usage_hourly (bucket_ts);
 CREATE TABLE IF NOT EXISTS limit_snapshots (
   id            bigserial PRIMARY KEY,
   captured_at   timestamptz NOT NULL DEFAULT now(),
-  window        text        NOT NULL,   -- 'weekly' | '5h' | 'opus_weekly'
+  win           text        NOT NULL,   -- 'weekly' | '5h' | 'opus_weekly' (window is reserved)
   used_pct      numeric,
   remaining_pct numeric,
   resets_at     timestamptz,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS limit_snapshots (
 );
 
 CREATE INDEX IF NOT EXISTS limit_snapshots_window_idx
-  ON limit_snapshots (window, captured_at DESC);
+  ON limit_snapshots (win, captured_at DESC);
 
 -- Small key/value config: your plan's weekly limit, the last collector ping,
 -- and the cached summary the cron refreshes.
