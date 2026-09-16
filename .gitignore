@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+out/
+build/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+mac/Shared/Secrets.swift
+
+# Collector runtime logs
+collector/collector.log
+
+# Next.js / Vercel
+.vercel/
+next-env.d.ts
+*.tsbuildinfo
+
+# Xcode (project is generated from project.yml via `xcodegen generate`)
+mac/ClaudeUsage.xcodeproj/
+mac/*.xcworkspace/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
