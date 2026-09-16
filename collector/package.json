@@ -1,0 +1,17 @@
+{
+  "name": "claude-usage-collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Parses local Claude Code logs and pushes usage to the dashboard.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "node --experimental-strip-types src/index.ts",
+    "once": "npm run build && node dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^20.14.0"
+  }
+}
