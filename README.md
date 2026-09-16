@@ -8,16 +8,18 @@ Automatically records your Claude Code usage every few hours into **Neon**, show
 
 ```
  Mac (data lives here)              Cloud (Vercel + Neon)          Clients
-  collector (launchd, 3h)  ──push──▶  Next.js dashboard  ──API──▶  Mac menu bar
+  collector (launchd, 3h)  ──push──▶  Next.js backend    ──API──▶  Mac menu bar
    parse ~/.claude/*.jsonl            /api/ingest (write)          Mac widget
    pricing → cost-equiv               /api/summary (read)          Android (later)
-   best-effort live % rem             /api/cron/rollup (5h)
-   local summary.json                 Neon Postgres
+   best-effort live % rem             /api/cron/rollup ◀──┐        
+   local summary.json                 Neon Postgres       │
+                                                    EC2 cron (5h) hits rollup
 ```
 
 - **collector/** — Node/TS. Parses Claude Code transcripts, aggregates hourly usage, best-effort live "% remaining", pushes to the dashboard, writes a local summary for the widget. Runs via launchd every 3h.
 - **dashboard/** — Next.js (App Router) on Vercel + Neon. Ingest & summary APIs, a 5-hourly cron rollup, and the metrics/insights UI.
 - **mac/** — SwiftUI menu bar app + WidgetKit widget (generated with `xcodegen`).
+- **cron/** — tiny shell script + crontab line to run the 5-hourly rollup from your own box (e.g. EC2), hitting `/api/cron/rollup`.
 
 ## Setup
 
