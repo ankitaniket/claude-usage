@@ -12,6 +12,16 @@ Last worked: 2026-09-17. Paused mid-way through the **"5-hour session window as 
 - **Repo**: https://github.com/ankitaniket/claude-usage (private).
 - **Live % remaining WORKS**: the endpoint returns `five_hour` (session) + `seven_day` (weekly) utilization + reset times.
 
+## ✅ DONE — "session-first" rework (built, deployed, verified 2026-09-17)
+
+The 5-hour session window is now the hero metric on the dashboard, menu bar, and
+widget, with its reset countdown; weekly/opus are secondary. `/api/summary`
+returns nested `session`/`week`/`opus`. Collector cadence bumped to **30 min**
+(`StartInterval 1800`) so the session % stays fresh. Live values confirmed
+(session 17%, week 67%, source=endpoint).
+
+<details><summary>original in-progress notes (now complete)</summary>
+
 ## 🚧 IN PROGRESS — "session-first" rework (code edited, NOT built/deployed/committed cleanly)
 
 Goal: make the **5-hour session window** the hero metric everywhere (it's the one that blocks you at 100%), with its reset countdown; weekly/opus become secondary.
@@ -43,8 +53,7 @@ Goal: make the **5-hour session window** the hero metric everywhere (it's the on
 6. **Verify**: `curl -H "Authorization: Bearer $SUMMARY_TOKEN" https://claude-usage-wiyse.vercel.app/api/summary` → expect nested `session`/`week`/`opus`.
 7. **Commit + push** each logical chunk with short messages.
 
-## 🔜 Also queued (task #10): fresher session data
-- Bump collector cadence so the 5h session % isn't stale: in `collector/com.claudeusage.collector.plist` change `StartInterval` `10800` → `1800` (30 min). Then reinstall: `cd collector && bash install.sh`.
+</details>
 
 ## 👤 YOUR manual steps (need your accounts/boxes)
 - **EC2 cron**: clone repo on EC2, `cd cron`, `cp .env.example .env`, set `DASHBOARD_URL=https://claude-usage-wiyse.vercel.app` and `CRON_SECRET` (from `.secrets.local`), `chmod +x rollup.sh && ./rollup.sh` to test, then add crontab `0 */5 * * *` (see `cron/README.md`).

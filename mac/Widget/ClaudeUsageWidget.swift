@@ -51,20 +51,29 @@ struct ClaudeUsageWidgetEntryView: View {
     var body: some View {
         let s = entry.summary
         HStack(spacing: 14) {
-            RingView(pct: s?.weekUsedPct).frame(width: 72, height: 72)
+            // PRIORITY: 5-hour session window.
+            RingView(pct: s?.session.usedPct).frame(width: 72, height: 72)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Claude")
+                Text("Session · 5h")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Text(s.map { "\(Fmt.tokens($0.todayTokens)) today" } ?? "not set up")
-                    .font(.system(size: 14, weight: .medium))
                 if let s {
-                    Text(Fmt.shortModel(s.dominantModel))
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                    if let r = Fmt.resetsIn(s.resetsAt) {
-                        Text("resets \(r)")
-                            .font(.system(size: 11)).foregroundStyle(.tertiary)
+                    if let r = Fmt.resetsIn(s.session.resetsAt) {
+                        Text("resets in \(r)")
+                            .font(.system(size: 14, weight: .medium))
+                    } else {
+                        Text("\(Fmt.tokens(s.todayTokens)) today")
+                            .font(.system(size: 14, weight: .medium))
                     }
+                    if let w = s.week.usedPct {
+                        Text("week \(Int(w))%")
+                            .font(.system(size: 12)).foregroundStyle(.secondary)
+                    }
+                    Text(Fmt.shortModel(s.dominantModel))
+                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                } else {
+                    Text("not set up")
+                        .font(.system(size: 14, weight: .medium))
                 }
             }
             Spacer()

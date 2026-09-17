@@ -16,11 +16,11 @@
   <key>WorkingDirectory</key>
   <string>__DIR__</string>
 
-  <!-- Run at load, then every 3 hours. -->
+  <!-- Run at load, then every 30 minutes (keeps the 5h session % fresh). -->
   <key>RunAtLoad</key>
   <true/>
   <key>StartInterval</key>
-  <integer>10800</integer>
+  <integer>1800</integer>
 
   <key>StandardOutPath</key>
   <string>__DIR__/collector.log</string>
